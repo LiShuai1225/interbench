@@ -379,13 +379,14 @@ retry:
 	return retval;
 }
 
-inline void record_sample(struct data_table *tb, unsigned long long current_time, unsigned long latency)
+inline void record_sample(struct data_table *tb, unsigned long long current_time, unsigned long latency, unsigned long deadline)
 {
 	if (ud.detailed) {
 		if (tb->_nr_samples >= ud.max_latency_samples)
 			terminal_error("Ran out of space to record samples");
 		tb->samples[tb->_nr_samples].timestamp_us = current_time;
 		tb->samples[tb->_nr_samples].latency = latency;
+		tb->samples[tb->_nr_samples].deadline = deadline;
 	}
 
 	if (latency > tb->_max_latency)
@@ -468,7 +469,7 @@ out_nosleep:
 	 * called again and the missed latency can be lost
 	 */
 	latency += missed_latency;
-	record_sample(tb, current_time, latency);
+	record_sample(tb, current_time, latency, missed_latency);
 
 	return deadline;
 }
@@ -608,7 +609,7 @@ void emulate_game(struct thread *th)
 			tb->missed_burns += latency;
 		} else
 			latency = 0;
-		record_sample(tb, current_time, latency);
+		record_sample(tb, current_time, latency, latency);
 		if (!trywait_sem(s))
 			return;
 	}
@@ -1111,11 +1112,12 @@ void show_latencies(struct thread *th)
 		unsigned int i;
 
 		for (i = 0; i < tbj->_nr_samples; i++) {
-			fprintf(ud.loglatencies, "%llu %8s-%-8s %lu\n",
+			fprintf(ud.loglatencies, "%llu %8s-%-8s %lu %lu\n",
 				tbj->samples[i].timestamp_us,
 				threadlist[primary_index].label,
 				threadlist[background_index].label,
-				tbj->samples[i].latency);
+				tbj->samples[i].latency,
+				tbj->samples[i].deadline);
 		}
 	}
 	sync_flush();

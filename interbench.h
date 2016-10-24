@@ -28,6 +28,7 @@ struct tk_thread {
 struct data_sample {
 	unsigned long long timestamp_us;
 	unsigned long latency;
+	unsigned long deadline;
 };
 
 struct data_table {
@@ -40,6 +41,7 @@ struct data_table {
 	unsigned long long missed_burns;
 	unsigned long long achieved_burns;
 	struct data_sample *samples;
+	struct data_sample *deadline_missed;
 };
 
 struct thread {
